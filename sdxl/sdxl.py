@@ -91,7 +91,7 @@ def retrieve_timesteps(
         timesteps = scheduler.timesteps
     return timesteps, num_inference_steps
 
-class KStep():
+class ETC():
     def __init__(self, model, p=6, threshold=0.017):
         self.model = model
         self.p = p #model pre-inference step, in paper we use n
@@ -458,4 +458,16 @@ class KStep():
         if not return_dict:
             return (image,)
 
+
         return StableDiffusionXLPipelineOutput(images=image)
+
+model = StableDiffusionXLPipeline.from_pretrained("./ckpt/stable-diffusion-xl-base", torch_dtype=torch.float16, use_safetensors=True, variant="fp16").to("cuda")
+pipe = ETC(model=model, p=6, threshold=0.0171)
+start = time.time()
+image = pipe(
+    prompt,
+    num_inference_steps=50,
+    generator=torch.Generator(device='cuda').manual_seed(42)
+).images[0]
+end = time.time()
+image.save(f"ETC.png")
