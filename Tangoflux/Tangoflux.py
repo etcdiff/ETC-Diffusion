@@ -246,10 +246,11 @@ class ETC():
 
 
 model = TangoFluxInference(name='./ckpt/TangoFlux')
-pipe = KStep(model=model,p=6,threshold=0.0675)
+pipe = ETC(model=model,p=6,threshold=0.0675)
 start = time.time()
 audio = pipe('Hammer slowly hitting the wooden table', num_inference_steps=50, duration=10)
 end = time.time()
 print('use time: ',end-start)
 
 torchaudio.save('kstep.wav', audio, 44100)
+
