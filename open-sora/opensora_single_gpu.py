@@ -22,7 +22,7 @@ from opensora.utils.inference_utils import (
 from opensora.utils.misc import to_torch_dtype
 from opensora.schedulers.rf.rectified_flow import timestep_transform
 
-class KStep():
+class ETC():
     def __init__(self, model, p=6, threshold=0.75):
         self.model = model
         self.p = p #model pre-inference step, in paper we use n
@@ -271,7 +271,7 @@ def main():
     scheduler = build_module(cfg.scheduler, SCHEDULERS) #rf.RFLOW
 
     #kstep
-    ks = KStep(model=scheduler,p=4,threshold=0.16840968)
+    pipe = ETC(model=scheduler,p=4,threshold=0.16840968)
 
     # ======================================================
     # inference
@@ -305,7 +305,7 @@ def main():
         additional_args=model_args
     )'''
     start = time.time()
-    samples = ks.sample(
+    samples = pipe.sample(
         model,
         text_encoder,
         z=z,
@@ -326,4 +326,5 @@ def main():
 
 
 if __name__ == "__main__":
+
     main()
