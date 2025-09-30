@@ -23,10 +23,11 @@ from opensora.utils.misc import to_torch_dtype
 from opensora.schedulers.rf.rectified_flow import timestep_transform
 
 class ETC():
-    def __init__(self, model, p=6, threshold=0.75):
+    def __init__(self, model, p=6, threshold=0.75, alpha=0.5):
         self.model = model
         self.p = p #model pre-inference step, in paper we use n
         self.threshold = threshold
+        self.alpha = alpha
         self.k = 0 #approximation step
         self.gradient = None
         self.pre_noise = None
@@ -69,7 +70,7 @@ class ETC():
             noise_added = noise_added | (mask == 1)
 
         current_step = 0
-        ema = None
+        trend = None
         with tqdm(total=len(timesteps)) as progress_bar:
             while current_step<len(timesteps):
                 if current_step < self.p or current_step==(len(timesteps)-1):
@@ -103,11 +104,11 @@ class ETC():
                         z = torch.where(mask_t_upper[:, None, :, None, None], z, x0)
 
                     #accelerate module
-                    if ema is None:
+                    if trend is None:
                         if current_step >0:
-                            ema = v_pred-self.pre_noise
+                            trend = v_pred-self.pre_noise
                     else:
-                        ema = (ema + v_pred-self.pre_noise)/2
+                        trend = (1-self.alpha)*trend + self.alpha*(v_pred-self.pre_noise)
 
                     self.pre_noise = v_pred
                     
@@ -141,14 +142,14 @@ class ETC():
                             v_pred = pred_uncond + guidance_scale * (pred_cond - pred_uncond)
 
                             #accelerate module
-                            ema = (ema + v_pred-self.pre_noise)/2
+                            trend = (1-self.alpha)*trend + self.alpha*(v_pred-self.pre_noise)
                             if self.k!=0:
-                                self.gradient = (1/self.k)*ema
+                                self.gradient = (1/self.k)*trend
                             else:
-                                self.gradient = ema
+                                self.gradient = trend
 
                             #upadte k
-                            if (v_pred - self.pre_noise - ema).abs().mean().item() < self.threshold:
+                            if (v_pred - self.pre_noise - trend).abs().mean().item() < self.threshold:
                                 self.k+=1
                             else:
                                 if self.k>0:
@@ -328,3 +329,4 @@ def main():
 if __name__ == "__main__":
 
     main()
+
