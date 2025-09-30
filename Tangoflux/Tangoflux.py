@@ -50,7 +50,7 @@ def retrieve_timesteps(
         timesteps = scheduler.timesteps
     return timesteps, num_inference_steps
 
-class KStep():
+class ETC():
     def __init__(self, model, p=8, threshold=0.75):
         self.model = model
         self.p = p #model pre-inference step, in paper we use n
@@ -246,9 +246,10 @@ class KStep():
 
 
 model = TangoFluxInference(name='./ckpt/TangoFlux')
-pipe = KStep(model=model,p=6,threshold=0.08350985)
+pipe = KStep(model=model,p=6,threshold=0.0675)
 start = time.time()
 audio = pipe('Hammer slowly hitting the wooden table', num_inference_steps=50, duration=10)
 end = time.time()
 print('use time: ',end-start)
+
 torchaudio.save('kstep.wav', audio, 44100)
