@@ -80,10 +80,11 @@ def retrieve_timesteps(
     return timesteps, num_inference_steps
 
 class ETC():
-    def __init__(self, model, p=8, threshold=0.75):
+    def __init__(self, model, p=8, threshold=0.75, alpha=0.5):
         self.model = model
         self.p = p #model pre-inference step, in paper we use n
         self.threshold = threshold
+        self.alpha = alpha
         self.k = 0 #approximation step
         self.gradient = None
         self.pre_noise = None
@@ -256,7 +257,7 @@ class ETC():
 
         # 6. Denoising loop
         current_step = 0
-        ema = None
+        trend = None
         with self.model.progress_bar(total=num_inference_steps) as progress_bar:
             if image_embeds is not None:
                 self.model._joint_attention_kwargs["ip_adapter_image_embeds"] = image_embeds
@@ -303,11 +304,11 @@ class ETC():
                             latents = latents.to(latents_dtype)
 
                     #accelerate module
-                    if ema is None:
+                    if trend is None:
                         if current_step >0:
-                            ema = noise_pred-self.pre_noise
+                            trend = noise_pred-self.pre_noise
                     else:
-                        ema = (ema + noise_pred-self.pre_noise)/2
+                        trend = (1-self.alpha)*trend + self.alpha*(noise_pred-self.pre_noise)
 
                     self.pre_noise = noise_pred
                     
@@ -352,16 +353,15 @@ class ETC():
                                 noise_pred = neg_noise_pred + true_cfg_scale * (noise_pred - neg_noise_pred)
                             
                             #accelerate module
-                            ema = (ema + noise_pred-self.pre_noise)/2
+                            trend = (1-self.alpha)*trend + self.alpha*(noise_pred-self.pre_noise)
                             if self.k!=0:
-                                self.gradient = (1/self.k)*ema
+                                self.gradient = (1/self.k)*trend
                             else:
-                                self.gradient = ema
+                                self.gradient = trend
 
                             #upadte k
-                            if (noise_pred - self.pre_noise - ema).abs().mean().item() < self.threshold:
-                                if self.k<5:
-                                    self.k+=1
+                            if (noise_pred - self.pre_noise - trend).abs().mean().item() < self.threshold:
+                                self.k+=1
                             else:
                                 if self.k>0:
                                     self.k-=1
@@ -414,3 +414,4 @@ image = pipe(prompt,height=1024,width=1024,guidance_scale=3.5,num_inference_step
 end= time.time()
 print('use time ', end-start)
 image.save("ETC.png")
+
