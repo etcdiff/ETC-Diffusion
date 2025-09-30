@@ -79,7 +79,7 @@ def retrieve_timesteps(
         timesteps = scheduler.timesteps
     return timesteps, num_inference_steps
 
-class KStep():
+class ETC():
     def __init__(self, model, p=8, threshold=0.75):
         self.model = model
         self.p = p #model pre-inference step, in paper we use n
@@ -396,4 +396,21 @@ class KStep():
         if not return_dict:
             return (image,)
 
+
         return FluxPipelineOutput(images=image)
+
+
+model = FluxPipeline.from_pretrained("./ckpt/FLUX.1-dev", torch_dtype=torch.bfloat16)
+model.to("cuda")
+generator = torch.Generator(device="cuda").manual_seed(42)
+
+pipe = ETC(model=model, p=6, threshold=0.1269)
+
+start = time.time()
+prompt = "A cat holding a sign that says hello world"
+num_inference_steps = 50
+image = pipe(prompt,height=1024,width=1024,guidance_scale=3.5,num_inference_steps=num_inference_steps, 
+            max_sequence_length=512,generator=generator).images[0]
+end= time.time()
+print('use time ', end-start)
+image.save("ETC.png")
