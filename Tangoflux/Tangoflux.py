@@ -51,10 +51,11 @@ def retrieve_timesteps(
     return timesteps, num_inference_steps
 
 class ETC():
-    def __init__(self, model, p=8, threshold=0.75):
+    def __init__(self, model, p=8, threshold=0.75, alpha=0.5):
         self.model = model
         self.p = p #model pre-inference step, in paper we use n
         self.threshold = threshold
+        self.alpha = alpha
         self.k = 0 #approximation step
         self.gradient = None
         self.pre_noise = None
@@ -143,7 +144,7 @@ class ETC():
         encoder_hidden_states = encoder_hidden_states.to(device)
         # 6. Denoising loop
         current_step = 0
-        ema = None
+        trend = None
         while current_step<len(timesteps):
             if current_step < self.p or current_step==(len(timesteps)-1):
                 t = timesteps[current_step]
@@ -172,11 +173,11 @@ class ETC():
                 latents = scheduler.step(noise_pred, t, latents).prev_sample
 
                 #accelerate module
-                if ema is None:
+                if trend is None:
                     if current_step >0:
-                        ema = noise_pred-self.pre_noise
+                        trend = noise_pred-self.pre_noise
                 else:
-                    ema = (ema + noise_pred-self.pre_noise)/2
+                    trend = (1-self.alpha)*trend + self.alpha*(noise_pred-self.pre_noise)
 
                 self.pre_noise = noise_pred
                 
@@ -213,14 +214,14 @@ class ETC():
                             )
 
                         #accelerate module
-                        ema = (ema + noise_pred-self.pre_noise)/2
+                        trend = (1-self.alpha)*trend + self.alpha*(noise_pred-self.pre_noise)
                         if self.k!=0:
-                            self.gradient = (1/self.k)*ema
+                            self.gradient = (1/self.k)*trend
                         else:
-                            self.gradient = ema
+                            self.gradient = trend
 
                         #upadte k
-                        if (noise_pred - self.pre_noise - ema).abs().mean().item() < self.threshold:
+                        if (noise_pred - self.pre_noise - trend).abs().mean().item() < self.threshold:
                             self.k+=1
                         else:
                             if self.k>0:
@@ -253,4 +254,5 @@ end = time.time()
 print('use time: ',end-start)
 
 torchaudio.save('kstep.wav', audio, 44100)
+
 
