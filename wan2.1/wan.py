@@ -22,11 +22,12 @@ from wan.utils.fm_solvers import (
 from wan.utils.fm_solvers_unipc import FlowUniPCMultistepScheduler
 import time
 
-class KStep():
-    def __init__(self, model, p=6, threshold=0.75):
+class ETC():
+    def __init__(self, model, p=6, threshold=0.75, alpha=0.5):
         self.model = model
         self.p = p #model pre-inference step, in paper we use n
         self.threshold = threshold
+        self.alpha=alpha
         self.k = 0 #approximation step
         self.gradient = None
         self.pre_noise = None
@@ -121,7 +122,7 @@ class KStep():
             arg_null = {'context': context_null, 'seq_len': seq_len}
             
             current_step = 0
-            ema = None           
+            trend = None           
             with tqdm(total=len(timesteps)) as progress_bar:
                 while current_step<len(timesteps):
                     if current_step < self.p or current_step==(len(timesteps)-1):
@@ -149,11 +150,11 @@ class KStep():
                         latents = [temp_x0.squeeze(0)]
 
                         #accelerate module
-                        if ema is None:
+                        if trend is None:
                             if current_step >0:
-                                ema = noise_pred-self.pre_noise
+                                trend = noise_pred-self.pre_noise
                         else:
-                            ema = (ema + noise_pred-self.pre_noise)/2
+                            trend = (1-self.alpha)*trend + self.alpha*(noise_pred-self.pre_noise)
 
                         self.pre_noise = noise_pred
                         
@@ -183,14 +184,14 @@ class KStep():
                                     noise_pred_cond - noise_pred_uncond)
                                 
                                 #accelerate module
-                                ema = (ema + noise_pred-self.pre_noise)/2
+                                trend = (1-self.alpha)*trend + self.alpha*(noise_pred-self.pre_noise)
                                 if self.k!=0:
-                                    self.gradient = (1/self.k)*ema
+                                    self.gradient = (1/self.k)*trend
                                 else:
-                                    self.gradient = ema
+                                    self.gradient = trend
 
                                 #upadte k
-                                if (noise_pred - self.pre_noise - ema).abs().mean().item() < self.threshold:
+                                if (noise_pred - self.pre_noise - trend).abs().mean().item() < self.threshold:
                                     self.k+=1
                                 else:
                                     if self.k>0:
@@ -415,7 +416,7 @@ def _parse_args():
     return args
 
 
-def get_model(task,size,base_seed,ckpt_dir,device,threshold=0.17):
+def get_model(task,size,base_seed,ckpt_dir,device,threshold=0.1181):
     args = _parse_args()
     args.task = task
     args.size = size
@@ -430,12 +431,12 @@ def get_model(task,size,base_seed,ckpt_dir,device,threshold=0.17):
         device_id=device
     )
 
-    model = KStep(model=wan_t2v,p=6,threshold=threshold)
+    model = ETC(model=wan_t2v,p=6,threshold=threshold)
     
     return model,args,cfg
 
 
-model,args,cfg = get_model(task='t2v-14B',size="832*480",base_seed=42,ckpt_dir='./ckpt/Wan2.1-T2V-14B',device=torch.cuda.current_device(),threshold=0.1523)
+model,args,cfg = get_model(task='t2v-14B',size="832*480",base_seed=42,ckpt_dir='./ckpt/Wan2.1-T2V-14B',device=torch.cuda.current_device(),threshold=0.1181)
 
 prompt = 'a yellow bicycle'
 
@@ -460,5 +461,6 @@ cache_video(
     nrow=1,
     normalize=True,
     value_range=(-1, 1)) 
+
 
 print(end-start)
