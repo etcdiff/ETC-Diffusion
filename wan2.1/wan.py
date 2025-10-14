@@ -185,17 +185,14 @@ class ETC():
                                 
                                 #accelerate module
                                 trend = (1-self.alpha)*trend + self.alpha*(noise_pred-self.pre_noise)
-                                if self.k!=0:
-                                    self.gradient = (1/self.k)*trend
-                                else:
-                                    self.gradient = trend
-
                                 #upadte k
                                 if (noise_pred - self.pre_noise - trend).abs().mean().item() < self.threshold:
                                     self.k+=1
                                 else:
                                     if self.k>0:
                                         self.k-=1
+                                if self.k!=0:
+                                    self.gradient = trend/self.k
                             
                             self.pre_noise = noise_pred
 
@@ -464,3 +461,4 @@ cache_video(
 
 
 print(end-start)
+
