@@ -143,18 +143,15 @@ class ETC():
 
                             #accelerate module
                             trend = (1-self.alpha)*trend + self.alpha*(v_pred-self.pre_noise)
-                            if self.k!=0:
-                                self.gradient = (1/self.k)*trend
-                            else:
-                                self.gradient = trend
-
                             #upadte k
                             if (v_pred - self.pre_noise - trend).abs().mean().item() < self.threshold:
                                 self.k+=1
                             else:
                                 if self.k>0:
                                     self.k-=1
-
+                             if self.k!=0:
+                                self.gradient = trend/self.k
+                            
                         self.pre_noise = v_pred
 
                         # update z
@@ -329,4 +326,5 @@ def main():
 if __name__ == "__main__":
 
     main()
+
 
