@@ -396,20 +396,20 @@ class ETC():
 
         return FluxPipelineOutput(images=image)
 
+if __name__ == "__main__":
+    model = FluxPipeline.from_pretrained("./ckpt/FLUX.1-dev", torch_dtype=torch.bfloat16)
+    model.to("cuda")
+    generator = torch.Generator(device="cuda").manual_seed(42)
+    
+    pipe = ETC(model=model, p=6, threshold=0.1269)
+    
+    start = time.time()
+    prompt = "A cat holding a sign that says hello world"
+    num_inference_steps = 50
+    image = pipe(prompt,height=1024,width=1024,guidance_scale=3.5,num_inference_steps=num_inference_steps, 
+                max_sequence_length=512,generator=generator).images[0]
+    end= time.time()
+    image.save(f"ETC-{end-start}.png")
 
-model = FluxPipeline.from_pretrained("./ckpt/FLUX.1-dev", torch_dtype=torch.bfloat16)
-model.to("cuda")
-generator = torch.Generator(device="cuda").manual_seed(42)
-
-pipe = ETC(model=model, p=6, threshold=0.1269)
-
-start = time.time()
-prompt = "A cat holding a sign that says hello world"
-num_inference_steps = 50
-image = pipe(prompt,height=1024,width=1024,guidance_scale=3.5,num_inference_steps=num_inference_steps, 
-            max_sequence_length=512,generator=generator).images[0]
-end= time.time()
-print('use time ', end-start)
-image.save("ETC.png")
 
 
