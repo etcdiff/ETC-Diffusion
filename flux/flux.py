@@ -6,6 +6,7 @@ import torch
 from diffusers.image_processor import PipelineImageInput, VaeImageProcessor
 from diffusers.utils import USE_PEFT_BACKEND,is_torch_xla_available,logging,scale_lora_layers,unscale_lora_layers
 from diffusers.pipelines.flux.pipeline_output import FluxPipelineOutput
+from diffusers import FluxPipeline
 
 def calculate_shift(
     image_seq_len,
@@ -410,6 +411,7 @@ if __name__ == "__main__":
                 max_sequence_length=512,generator=generator).images[0]
     end= time.time()
     image.save(f"ETC-{end-start}.png")
+
 
 
 
