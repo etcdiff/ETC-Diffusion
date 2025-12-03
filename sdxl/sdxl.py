@@ -458,15 +458,17 @@ class ETC():
 
         return StableDiffusionXLPipelineOutput(images=image)
 
-model = StableDiffusionXLPipeline.from_pretrained("./ckpt/stable-diffusion-xl-base", torch_dtype=torch.float16, use_safetensors=True, variant="fp16").to("cuda")
-pipe = ETC(model=model, p=6, threshold=0.0171)
-start = time.time()
-image = pipe(
-    prompt,
-    num_inference_steps=50,
-    generator=torch.Generator(device='cuda').manual_seed(42)
-).images[0]
-end = time.time()
-image.save(f"ETC.png")
+if __name__ == "__main__":
+    model = StableDiffusionXLPipeline.from_pretrained("./ckpt/stable-diffusion-xl-base", torch_dtype=torch.float16, use_safetensors=True, variant="fp16").to("cuda")
+    pipe = ETC(model=model, p=6, threshold=0.0171)
+    start = time.time()
+    image = pipe(
+        prompt,
+        num_inference_steps=50,
+        generator=torch.Generator(device='cuda').manual_seed(42)
+    ).images[0]
+    end = time.time()
+    image.save(f"ETC-{end-start}.png")
+
 
 
