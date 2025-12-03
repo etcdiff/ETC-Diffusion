@@ -149,7 +149,7 @@ class ETC():
                             else:
                                 if self.k>0:
                                     self.k-=1
-                             if self.k!=0:
+                            if self.k!=0:
                                 self.gradient = trend/self.k
                             
                         self.pre_noise = v_pred
@@ -326,5 +326,6 @@ def main():
 if __name__ == "__main__":
 
     main()
+
 
 
