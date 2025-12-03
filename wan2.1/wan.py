@@ -432,33 +432,28 @@ def get_model(task,size,base_seed,ckpt_dir,device,threshold=0.1181):
     
     return model,args,cfg
 
+if __name__ == "__main__":
+    model,args,cfg = get_model(task='t2v-14B',size="832*480",base_seed=42,ckpt_dir='./ckpt/Wan2.1-T2V-14B',device=torch.cuda.current_device(),threshold=0.1181)
+    prompt = 'a yellow bicycle'
+    start = time.time()
+    video = model.generate(
+        prompt,
+        size=SIZE_CONFIGS[args.size],
+        frame_num=args.frame_num,
+        shift=args.sample_shift,
+        sample_solver=args.sample_solver,
+        sampling_steps=args.sample_steps,
+        guide_scale=args.sample_guide_scale,
+        seed=args.base_seed,
+        offload_model=args.offload_model
+    )
+    end = time.time()
+    cache_video(
+        tensor=video[None],
+        save_file=f'ETC-{end-start}.mp4',
+        fps=cfg.sample_fps,
+        nrow=1,
+        normalize=True,
+        value_range=(-1, 1)) 
 
-model,args,cfg = get_model(task='t2v-14B',size="832*480",base_seed=42,ckpt_dir='./ckpt/Wan2.1-T2V-14B',device=torch.cuda.current_device(),threshold=0.1181)
-
-prompt = 'a yellow bicycle'
-
-start = time.time()
-
-video = model.generate(
-    prompt,
-    size=SIZE_CONFIGS[args.size],
-    frame_num=args.frame_num,
-    shift=args.sample_shift,
-    sample_solver=args.sample_solver,
-    sampling_steps=args.sample_steps,
-    guide_scale=args.sample_guide_scale,
-    seed=args.base_seed,
-    offload_model=args.offload_model
-)
-end = time.time()
-cache_video(
-    tensor=video[None],
-    save_file=f'ETC-{end-start}.mp4',
-    fps=cfg.sample_fps,
-    nrow=1,
-    normalize=True,
-    value_range=(-1, 1)) 
-
-
-print(end-start)
 
