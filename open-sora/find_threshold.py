@@ -231,5 +231,7 @@ sim = [0.44650451 0.62349985 0.7750346  0.80889098 0.84670824 0.88891779
  0.93047215 0.93020834 0.92964974 0.92718594 0.92278635 0.91954144
  0.91044299 0.90013892 0.87673798 0.8313456  0.71094791]
 '''
-result = rpt.KernelCPD(kernel="rbf").fit(sim).predict(n_bkps=4)[:-1]
-print('Final Threshold: ',chazhi[result].min())
+algo = rpt.BottomUp(model="l1").fit(sim)
+result = algo.predict(n_bkps=1)[0]
+
+print('Final Threshold: ',chazhi[result])
