@@ -401,5 +401,8 @@ sim = np.array(sim) / len(prompts_set)
  0.95707692 0.94847495 0.93263815 0.91081751 0.88100935 0.82703689
  0.74737693]'''
 
-result = rpt.KernelCPD(kernel="rbf").fit(sim).predict(n_bkps=4)[:-1]
-print('Final Threshold: ',chazhi[result].max()) #0.08566508
+algo = rpt.BottomUp(model="l1").fit(sim)
+result = algo.predict(n_bkps=1)[0]
+
+print('Final Threshold: ',chazhi[result])
+
