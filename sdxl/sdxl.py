@@ -3,7 +3,8 @@ from typing import Any, Callable, Dict, List, Optional, Tuple, Union
 import torch
 from diffusers.image_processor import PipelineImageInput
 from diffusers.pipelines.stable_diffusion_xl.pipeline_output import StableDiffusionXLPipelineOutput
-
+from diffusers import StableDiffusionXLPipeline
+import time
 
 # Copied from diffusers.pipelines.stable_diffusion.pipeline_stable_diffusion.rescale_noise_cfg
 def rescale_noise_cfg(noise_cfg, noise_pred_text, guidance_rescale=0.0):
@@ -469,6 +470,7 @@ if __name__ == "__main__":
     ).images[0]
     end = time.time()
     image.save(f"ETC-{end-start}.png")
+
 
 
 
